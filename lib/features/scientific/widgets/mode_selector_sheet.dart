@@ -50,7 +50,7 @@ class ModeSelectorSheet extends StatelessWidget {
             subtitle: const Text('Opens the Advanced Matrix tool.'),
             onTap: () {
               Navigator.of(context).pop();
-              context.push('/advanced');
+              context.push('/advanced/matrix');
             },
           ),
           ListTile(
@@ -59,7 +59,7 @@ class ModeSelectorSheet extends StatelessWidget {
             subtitle: const Text('Opens the Advanced Equation solver.'),
             onTap: () {
               Navigator.of(context).pop();
-              context.push('/advanced');
+              context.push('/advanced/equation');
             },
           ),
           const SizedBox(height: 8),

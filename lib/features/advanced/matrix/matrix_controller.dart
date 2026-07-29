@@ -1,0 +1,119 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/expression_engine/errors.dart';
+import '../../../core/linear_algebra/eigen.dart';
+import '../../../core/linear_algebra/matrix.dart';
+import '../../../shared/services/history_service.dart';
+
+enum MatrixOperation { determinant, inverse, transpose, rank, eigenvalues, add, subtract, multiply }
+
+class MatrixToolState {
+  const MatrixToolState({
+    this.rows = 2,
+    this.columns = 2,
+    this.values = const ['0', '0', '0', '0'],
+    this.secondaryValues = const ['0', '0', '0', '0'],
+    this.result,
+    this.error,
+  });
+
+  final int rows;
+  final int columns;
+  final List<String> values;
+  final List<String> secondaryValues;
+  final String? result;
+  final String? error;
+
+  MatrixToolState copyWith({
+    int? rows,
+    int? columns,
+    List<String>? values,
+    List<String>? secondaryValues,
+    String? result,
+    String? error,
+    bool clearOutput = false,
+    bool clearError = false,
+  }) {
+    return MatrixToolState(
+      rows: rows ?? this.rows,
+      columns: columns ?? this.columns,
+      values: values ?? this.values,
+      secondaryValues: secondaryValues ?? this.secondaryValues,
+      result: clearOutput ? null : result ?? this.result,
+      error: clearError ? null : error ?? this.error,
+    );
+  }
+}
+
+class MatrixController extends Notifier<MatrixToolState> {
+  static const _minimumSize = 2;
+  static const _maximumSize = 4;
+
+  @override
+  MatrixToolState build() => const MatrixToolState();
+
+  void setSize({required int rows, required int columns}) {
+    final safeRows = rows.clamp(_minimumSize, _maximumSize);
+    final safeColumns = columns.clamp(_minimumSize, _maximumSize);
+    final count = safeRows * safeColumns;
+    state = MatrixToolState(
+      rows: safeRows,
+      columns: safeColumns,
+      values: _resize(state.values, count),
+      secondaryValues: _resize(state.secondaryValues, count),
+    );
+  }
+
+  void setValue(int index, String value, {bool secondary = false}) {
+    final updated = List<String>.from(secondary ? state.secondaryValues : state.values);
+    updated[index] = value;
+    state = secondary
+        ? state.copyWith(secondaryValues: updated, clearOutput: true, clearError: true)
+        : state.copyWith(values: updated, clearOutput: true, clearError: true);
+  }
+
+  void execute(MatrixOperation operation) {
+    try {
+      final primary = _readMatrix(state.values);
+      final result = switch (operation) {
+        MatrixOperation.determinant => 'det(A) = ${_format(primary.determinant())}',
+        MatrixOperation.inverse => _formatMatrix('A⁻¹', primary.inverse()),
+        MatrixOperation.transpose => _formatMatrix('Aᵀ', primary.transpose()),
+        MatrixOperation.rank => 'rank(A) = ${primary.rank()}',
+        MatrixOperation.eigenvalues => _formatValues('Eigenvalues', const EigenSolver().realEigenvalues(primary)),
+        MatrixOperation.add => _formatMatrix('A + B', primary + _readMatrix(state.secondaryValues)),
+        MatrixOperation.subtract => _formatMatrix('A − B', primary - _readMatrix(state.secondaryValues)),
+        MatrixOperation.multiply => _formatMatrix('A × B', primary.multiply(_readMatrix(state.secondaryValues))),
+      };
+      state = state.copyWith(result: result, clearError: true);
+      ref.read(historyServiceProvider.notifier).add(mode: 'Matrix', expression: operation.name, result: result);
+    } on MathException catch (error) {
+      state = state.copyWith(error: error.message);
+    } on FormatException {
+      state = state.copyWith(error: 'Every matrix cell must contain a valid number.');
+    }
+  }
+
+  Matrix _readMatrix(List<String> source) {
+    final values = List.generate(state.rows, (row) {
+      return List.generate(state.columns, (column) => double.parse(source[row * state.columns + column].trim()));
+    });
+    return Matrix(values);
+  }
+
+  List<String> _resize(List<String> source, int count) => List.generate(count, (index) => index < source.length ? source[index] : '0');
+
+  String _formatMatrix(String label, Matrix matrix) {
+    final rows = matrix.values.map((row) => '[${row.map(_format).join(', ')}]').join('\n');
+    return '$label =\n$rows';
+  }
+
+  String _formatValues(String label, List<double> values) => '$label: ${values.map(_format).join(', ')}';
+
+  String _format(double value) {
+    if (value == value.roundToDouble()) return value.toInt().toString();
+    return value.toStringAsPrecision(8).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+  }
+}
+
+final matrixControllerProvider = NotifierProvider<MatrixController, MatrixToolState>(MatrixController.new);
