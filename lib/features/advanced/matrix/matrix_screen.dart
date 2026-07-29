@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/guided_number_entry_sheet.dart';
 import 'matrix_controller.dart';
 
-class MatrixScreen extends ConsumerWidget {
+class MatrixScreen extends ConsumerStatefulWidget {
   const MatrixScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MatrixScreen> createState() => _MatrixScreenState();
+}
+
+class _MatrixScreenState extends ConsumerState<MatrixScreen> {
+  var _leftName = 'A';
+  var _rightName = 'B';
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(matrixControllerProvider);
     final controller = ref.read(matrixControllerProvider.notifier);
 
@@ -17,22 +26,69 @@ class MatrixScreen extends ConsumerWidget {
         if (!didPop) Navigator.of(context).pop();
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Matrix')),
+        appBar: AppBar(title: const Text('Matrix Workbench')),
         body: SafeArea(
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Matrix A', style: Theme.of(context).textTheme.titleLarge),
+              Text('Build a matrix', style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 6),
+              Text('Enter values directly or use the fast number pad, then save the matrix into A, B, or C.', style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 12),
               _SizeSelector(state: state, controller: controller),
               const SizedBox(height: 16),
               _MatrixGrid(values: state.values, rows: state.rows, columns: state.columns, onChanged: controller.setValue),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: OutlinedButton.icon(onPressed: () => _openGuidedEntry(context, state, controller), icon: const Icon(Icons.dialpad_outlined), label: const Text('Fast entry'))),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: MenuAnchor(
+                      builder: (context, menuController, _) => FilledButton.icon(onPressed: menuController.open, icon: const Icon(Icons.save_outlined), label: const Text('Save as')),
+                      menuChildren: [
+                        for (final name in const ['A', 'B', 'C'])
+                          MenuItemButton(
+                            onPressed: () {
+                              controller.saveCurrentAs(name);
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved current matrix as $name.')));
+                            },
+                            child: Text('Save as $name'),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 20),
-              Text('Operations', style: Theme.of(context).textTheme.titleMedium),
+              Text('Saved matrices', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
-              _OperationGrid(
-                onExecute: controller.execute,
-                onNeedSecondary: () => _showSecondarySheet(context, state, controller),
+              _SavedMatricesPanel(state: state, controller: controller),
+              const SizedBox(height: 20),
+              Text('Single-matrix operations', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              _OperationGrid(onExecute: controller.execute),
+              const SizedBox(height: 20),
+              Text('A/B/C operations', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text('Apply an operation directly to saved matrices.', style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _MatrixNamePicker(label: 'Left', value: _leftName, onChanged: (value) => setState(() => _leftName = value))),
+                  const SizedBox(width: 12),
+                  Expanded(child: _MatrixNamePicker(label: 'Right', value: _rightName, onChanged: (value) => setState(() => _rightName = value))),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton(onPressed: () => controller.executeSaved(MatrixOperation.add, leftName: _leftName, rightName: _rightName), child: Text('$_leftName + $_rightName')),
+                  OutlinedButton(onPressed: () => controller.executeSaved(MatrixOperation.subtract, leftName: _leftName, rightName: _rightName), child: Text('$_leftName − $_rightName')),
+                  FilledButton(onPressed: () => controller.executeSaved(MatrixOperation.multiply, leftName: _leftName, rightName: _rightName), child: Text('$_leftName × $_rightName')),
+                ],
               ),
               if (state.error != null || state.result != null) ...[
                 const SizedBox(height: 20),
@@ -45,49 +101,13 @@ class MatrixScreen extends ConsumerWidget {
     );
   }
 
-  void _showSecondarySheet(BuildContext context, MatrixToolState state, MatrixController controller) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(sheetContext).bottom),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Matrix B', style: Theme.of(sheetContext).textTheme.titleLarge),
-                const SizedBox(height: 12),
-                _MatrixGrid(
-                  values: state.secondaryValues,
-                  rows: state.rows,
-                  columns: state.columns,
-                  onChanged: (index, value) => controller.setValue(index, value, secondary: true),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    FilledButton(onPressed: () {
-                      Navigator.of(sheetContext).pop();
-                      controller.execute(MatrixOperation.add);
-                    }, child: const Text('A + B')),
-                    FilledButton(onPressed: () {
-                      Navigator.of(sheetContext).pop();
-                      controller.execute(MatrixOperation.subtract);
-                    }, child: const Text('A − B')),
-                    FilledButton(onPressed: () {
-                      Navigator.of(sheetContext).pop();
-                      controller.execute(MatrixOperation.multiply);
-                    }, child: const Text('A × B')),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+  void _openGuidedEntry(BuildContext context, MatrixToolState state, MatrixController controller) {
+    GuidedNumberEntrySheet.show(
+      context,
+      title: 'Fast matrix entry',
+      labels: List.generate(state.values.length, (index) => 'Matrix cell [${index ~/ state.columns + 1}, ${index % state.columns + 1}]'),
+      values: state.values,
+      onValue: controller.setValue,
     );
   }
 }
@@ -122,7 +142,7 @@ class _DimensionPicker extends StatelessWidget {
     return DropdownButtonFormField<int>(
       initialValue: value,
       decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-      items: [2, 3, 4].map((size) => DropdownMenuItem(value: size, child: Text('$size'))).toList(),
+      items: [1, 2, 3, 4].map((size) => DropdownMenuItem(value: size, child: Text('$size'))).toList(),
       onChanged: (value) => onChanged(value!),
     );
   }
@@ -156,20 +176,18 @@ class _MatrixGrid extends StatelessWidget {
 }
 
 class _OperationGrid extends StatelessWidget {
-  const _OperationGrid({required this.onExecute, required this.onNeedSecondary});
+  const _OperationGrid({required this.onExecute});
 
   final ValueChanged<MatrixOperation> onExecute;
-  final VoidCallback onNeedSecondary;
 
   @override
   Widget build(BuildContext context) {
-    final operations = <({String label, MatrixOperation? operation})>[
+    final operations = <({String label, MatrixOperation operation})>[
       (label: 'det(A)', operation: MatrixOperation.determinant),
       (label: 'A⁻¹', operation: MatrixOperation.inverse),
       (label: 'Aᵀ', operation: MatrixOperation.transpose),
       (label: 'rank(A)', operation: MatrixOperation.rank),
-      (label: 'eigenvalues', operation: MatrixOperation.eigenvalues),
-      (label: 'A ± B / A × B', operation: null),
+      (label: 'Eigenvalues', operation: MatrixOperation.eigenvalues),
     ];
     return GridView.builder(
       shrinkWrap: true,
@@ -179,12 +197,61 @@ class _OperationGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = operations[index];
         return OutlinedButton(
-          onPressed: item.operation == null ? onNeedSecondary : () => onExecute(item.operation!),
+          onPressed: () => onExecute(item.operation),
           child: Text(item.label),
         );
       },
     );
   }
+}
+
+class _SavedMatricesPanel extends StatelessWidget {
+  const _SavedMatricesPanel({required this.state, required this.controller});
+
+  final MatrixToolState state;
+  final MatrixController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (final name in const ['A', 'B', 'C'])
+          Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: CircleAvatar(child: Text(name)),
+              title: Text(state.savedMatrices.containsKey(name) ? 'Matrix $name' : 'Matrix $name is empty'),
+              subtitle: Text(state.savedMatrices.containsKey(name) ? '${state.savedMatrices[name]!.rows} × ${state.savedMatrices[name]!.columns} saved' : 'Save the current editor into this slot.'),
+              trailing: state.savedMatrices.containsKey(name)
+                  ? Wrap(
+                      spacing: 2,
+                      children: [
+                        IconButton(tooltip: 'Load $name', onPressed: () => controller.loadSaved(name), icon: const Icon(Icons.download_outlined)),
+                        IconButton(tooltip: 'Remove $name', onPressed: () => controller.removeSaved(name), icon: const Icon(Icons.delete_outline)),
+                      ],
+                    )
+                  : null,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MatrixNamePicker extends StatelessWidget {
+  const _MatrixNamePicker({required this.label, required this.value, required this.onChanged});
+
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) => DropdownButtonFormField<String>(
+    initialValue: value,
+    decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+    items: const ['A', 'B', 'C'].map((name) => DropdownMenuItem(value: name, child: Text('Matrix $name'))).toList(),
+    onChanged: (value) => onChanged(value!),
+  );
 }
 
 class _ResultPanel extends StatelessWidget {
