@@ -35,7 +35,7 @@ class ConicResult {
     required this.center,
     required this.vertices,
     required this.foci,
-    required this.curvePoints,
+    required this.curveSegments,
     this.isDegenerate = false,
     this.degeneracyMessage,
     this.eccentricity,
@@ -70,11 +70,12 @@ class ConicResult {
   final List<Point2D> latusRectumEndpoints;
   final double rotationAngleRadians;
 
-  /// Sampled points along the curve in original-coordinate space, ready to
-  /// be drawn as a polyline (or two polylines for a hyperbola's branches —
-  /// callers detect a branch break by a large jump between consecutive
-  /// points and start a new sub-path).
-  final List<Point2D> curvePoints;
+  /// One polyline per continuous branch of the curve, in original-coordinate
+  /// (world) space. A circle/ellipse/parabola contributes exactly one
+  /// segment; a hyperbola contributes two (its two branches), kept separate
+  /// so the painter never draws a connecting line across the gap between
+  /// them. Empty for a degenerate conic (no real locus to trace).
+  final List<List<Point2D>> curveSegments;
 
   String get shapeName => switch (type) {
     ConicType.circle => 'Circle',
@@ -85,3 +86,4 @@ class ConicResult {
     ConicType.degenerate => 'Degenerate Conic',
   };
 }
+
