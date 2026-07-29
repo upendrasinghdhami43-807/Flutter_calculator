@@ -42,4 +42,21 @@ void main() {
     controller.execute(MatrixOperation.rank);
     expect(container.read(matrixControllerProvider).error, 'Every matrix cell must contain a valid number.');
   });
+
+  test('supports a 1x1 matrix', () {
+    controller.setSize(rows: 1, columns: 1);
+    controller.setValue(0, '7');
+    controller.execute(MatrixOperation.determinant);
+    expect(container.read(matrixControllerProvider).result, 'det(A) = 7');
+  });
+
+  test('saves A and B then applies an operation between their snapshots', () {
+    populate(['1', '2', '3', '4']);
+    controller.saveCurrentAs('A');
+    populate(['5', '6', '7', '8']);
+    controller.saveCurrentAs('B');
+    controller.executeSaved(MatrixOperation.add, leftName: 'A', rightName: 'B');
+    expect(container.read(matrixControllerProvider).result, contains('A + B'));
+    expect(container.read(matrixControllerProvider).result, contains('[6, 8]'));
+  });
 }
