@@ -30,6 +30,33 @@ class Matrix {
 
   Matrix transpose() => Matrix(List.generate(columnCount, (column) => List.generate(rowCount, (row) => _values[row][column])));
 
+  int rank() {
+    final data = values;
+    var rank = 0;
+    for (var column = 0; column < columnCount && rank < rowCount; column++) {
+      var pivot = -1;
+      for (var row = rank; row < rowCount; row++) {
+        if (data[row][column].abs() > 1e-9) {
+          pivot = row;
+          break;
+        }
+      }
+      if (pivot == -1) continue;
+      final swap = data[rank];
+      data[rank] = data[pivot];
+      data[pivot] = swap;
+      final pivotValue = data[rank][column];
+      for (var row = rank + 1; row < rowCount; row++) {
+        final factor = data[row][column] / pivotValue;
+        for (var c = column; c < columnCount; c++) {
+          data[row][c] -= factor * data[rank][c];
+        }
+      }
+      rank++;
+    }
+    return rank;
+  }
+
   double determinant() {
     if (rowCount != columnCount) throw const MathDomainException('Determinant requires a square matrix.');
     final data = values;
