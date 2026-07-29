@@ -70,6 +70,8 @@ class ExpressionEvaluator {
         'ln' => _naturalLog(value),
         'abs' => value.abs(),
         'exp' => math.exp(value),
+        'floor' => value.floorToDouble(),
+        'ceil' => value.ceilToDouble(),
         _ => throw MathEvaluationException('Unknown function: $name'),
       };
     }
@@ -79,6 +81,8 @@ class ExpressionEvaluator {
         'ncr' => _combinations(arguments[0], arguments[1]),
         'root' => _nthRoot(arguments[0], arguments[1]),
         'logb' => _logBase(arguments[0], arguments[1]),
+        'gcd' => _gcd(arguments[0], arguments[1]),
+        'lcm' => _lcm(arguments[0], arguments[1]),
         _ => throw MathEvaluationException('Unknown function: $name'),
       };
     }
@@ -141,6 +145,26 @@ class ExpressionEvaluator {
     if (base <= 0 || base == 1) throw const MathDomainException('Log base must be positive and not equal to 1.');
     if (value <= 0) throw const MathDomainException('Logarithm requires a positive value.');
     return math.log(value) / math.log(base);
+  }
+
+  double _gcd(double a, double b) {
+    if (a != a.roundToDouble() || b != b.roundToDouble()) {
+      throw const MathDomainException('GCD requires whole numbers.');
+    }
+    var x = a.abs().round();
+    var y = b.abs().round();
+    while (y != 0) {
+      final t = y;
+      y = x % y;
+      x = t;
+    }
+    if (x == 0) throw const MathDomainException('GCD is undefined for both arguments being zero.');
+    return x.toDouble();
+  }
+
+  double _lcm(double a, double b) {
+    if (a == 0 || b == 0) throw const MathDomainException('LCM is undefined when an argument is zero.');
+    return (a.abs() / _gcd(a, b) * b.abs());
   }
 
   double _squareRoot(double value) {
