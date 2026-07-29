@@ -3,14 +3,14 @@ import 'expression_node.dart';
 import 'tokenizer.dart';
 
 class ExpressionParser {
-  ExpressionParser({Tokenizer tokenizer = const Tokenizer()}) : _tokenizer = tokenizer;
+  ExpressionParser({this.tokenizer = const Tokenizer()});
 
-  final Tokenizer _tokenizer;
+  final Tokenizer tokenizer;
   late List<Token> _tokens;
   var _current = 0;
 
   ExpressionNode parse(String source) {
-    _tokens = _tokenizer.tokenize(source);
+    _tokens = tokenizer.tokenize(source);
     _current = 0;
     final expression = _parseAddSubtract();
     if (!_isAtEnd) {
