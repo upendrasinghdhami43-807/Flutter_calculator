@@ -25,23 +25,21 @@ class ModeSelectorSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Padding(padding: EdgeInsets.all(16), child: Text('Select mode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-          RadioListTile<ProMode>(
+          ListTile(
+            leading: Icon(currentMode == ProMode.comp ? Icons.radio_button_checked : Icons.radio_button_unchecked),
             title: const Text('COMP — General calculation'),
             subtitle: const Text('Trig, log, power, factorial, combinatorics, fractions.'),
-            value: ProMode.comp,
-            groupValue: currentMode,
-            onChanged: (value) {
-              onSelect(value!);
+            onTap: () {
+              onSelect(ProMode.comp);
               Navigator.of(context).pop();
             },
           ),
-          RadioListTile<ProMode>(
+          ListTile(
+            leading: Icon(currentMode == ProMode.complex ? Icons.radio_button_checked : Icons.radio_button_unchecked),
             title: const Text('CMPLX — Complex numbers'),
             subtitle: const Text('Format the result as a complex number.'),
-            value: ProMode.complex,
-            groupValue: currentMode,
-            onChanged: (value) {
-              onSelect(value!);
+            onTap: () {
+              onSelect(ProMode.complex);
               Navigator.of(context).pop();
             },
           ),
