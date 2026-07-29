@@ -58,15 +58,26 @@ class ExpressionParser {
   }
 
   ExpressionNode _parsePrimary() {
+    var node = _parsePrimaryValue();
+    while (_matchOperator('!')) {
+      node = FactorialNode(node);
+    }
+    return node;
+  }
+
+  ExpressionNode _parsePrimaryValue() {
     if (_match(TokenType.number)) {
       return NumberNode(double.parse(_previous.lexeme));
     }
     if (_match(TokenType.identifier)) {
       final name = _previous.lexeme.toLowerCase();
       if (_match(TokenType.leftParen)) {
-        final argument = _parseAddSubtract();
+        final arguments = <ExpressionNode>[_parseAddSubtract()];
+        while (_match(TokenType.comma)) {
+          arguments.add(_parseAddSubtract());
+        }
         _consume(TokenType.rightParen, 'Expected ) after function argument.');
-        return FunctionCallNode(name, argument);
+        return FunctionCallNode(name, arguments);
       }
       return VariableNode(name);
     }

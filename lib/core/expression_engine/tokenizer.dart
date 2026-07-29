@@ -1,6 +1,6 @@
 import 'errors.dart';
 
-enum TokenType { number, identifier, operator, leftParen, rightParen, end }
+enum TokenType { number, identifier, operator, leftParen, rightParen, comma, end }
 
 class Token {
   const Token(this.type, this.lexeme);
@@ -36,7 +36,7 @@ class Tokenizer {
           index++;
         }
         tokens.add(Token(TokenType.identifier, source.substring(start, index)));
-      } else if ('+-*/^%'.contains(character)) {
+      } else if ('+-*/^%!'.contains(character)) {
         tokens.add(Token(TokenType.operator, character));
         index++;
       } else if (character == '(') {
@@ -44,6 +44,9 @@ class Tokenizer {
         index++;
       } else if (character == ')') {
         tokens.add(const Token(TokenType.rightParen, ')'));
+        index++;
+      } else if (character == ',') {
+        tokens.add(const Token(TokenType.comma, ','));
         index++;
       } else {
         throw MathParseException('Unsupported character: $character');

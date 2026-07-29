@@ -30,8 +30,14 @@ final class BinaryOpNode extends ExpressionNode {
 }
 
 final class FunctionCallNode extends ExpressionNode {
-  const FunctionCallNode(this.name, this.argument);
+  const FunctionCallNode(this.name, this.arguments);
 
   final String name;
-  final ExpressionNode argument;
+  final List<ExpressionNode> arguments;
+}
+
+final class FactorialNode extends ExpressionNode {
+  const FactorialNode(this.operand);
+
+  final ExpressionNode operand;
 }
