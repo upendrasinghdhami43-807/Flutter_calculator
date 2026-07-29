@@ -4,7 +4,7 @@ import '../../../core/conics/conic_painter.dart';
 import '../../../core/conics/conic_result.dart';
 import '../../../core/conics/conic_solver.dart';
 import '../../../core/expression_engine/errors.dart';
-import 'general_conic_parser.dart';
+import '../../../shared/widgets/guided_number_entry_sheet.dart';
 
 enum ManualConicShape { circle, ellipse, parabola, hyperbola, rectangularHyperbola }
 
@@ -24,7 +24,6 @@ class ConicWorkspace extends StatefulWidget {
 
 class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProviderStateMixin {
   final _solver = const ConicSolver();
-  final _parser = const GeneralConicParser();
   late final TabController _tabs;
   final _centerX = TextEditingController(text: '0');
   final _centerY = TextEditingController(text: '0');
@@ -32,7 +31,12 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
   final _axisX = TextEditingController(text: '2');
   final _axisY = TextEditingController(text: '3');
   final _p = TextEditingController(text: '1');
-  final _equation = TextEditingController(text: 'x² + y² - 4 = 0');
+  final _generalA = TextEditingController(text: '1');
+  final _generalB = TextEditingController(text: '1');
+  final _generalH = TextEditingController(text: '0');
+  final _generalG = TextEditingController(text: '0');
+  final _generalF = TextEditingController(text: '0');
+  final _generalC = TextEditingController(text: '-4');
   ManualConicShape _shape = ManualConicShape.circle;
   String _parabolaDirection = 'Up';
   String _hyperbolaAxis = 'Horizontal';
@@ -48,7 +52,7 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
   @override
   void dispose() {
     _tabs.dispose();
-    for (final controller in [_centerX, _centerY, _radius, _axisX, _axisY, _p, _equation]) {
+    for (final controller in [_centerX, _centerY, _radius, _axisX, _axisY, _p, _generalA, _generalB, _generalH, _generalG, _generalF, _generalC]) {
       controller.dispose();
     }
     super.dispose();
@@ -57,18 +61,6 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
   void _applyTemplate(ManualConicShape shape) {
     setState(() {
       _shape = shape;
-      switch (shape) {
-        case ManualConicShape.circle:
-          _equation.text = 'x² + y² - 4 = 0';
-        case ManualConicShape.ellipse:
-          _equation.text = '9x² + 4y² - 36 = 0';
-        case ManualConicShape.parabola:
-          _equation.text = 'x² - 4y = 0';
-        case ManualConicShape.hyperbola:
-          _equation.text = 'x² - 4y² - 4 = 0';
-        case ManualConicShape.rectangularHyperbola:
-          _equation.text = 'x² - y² - 1 = 0';
-      }
     });
   }
 
@@ -104,8 +96,14 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
 
   void _generateEquation() {
     try {
-      final coefficients = _parser.parse(_equation.text);
-      final result = _solver.solveGeneral(coefficients.a, coefficients.b, coefficients.c, coefficients.d, coefficients.e, coefficients.f);
+      final result = _solver.solveGeneral(
+        _generalValue(_generalA),
+        2 * _generalValue(_generalH),
+        _generalValue(_generalB),
+        2 * _generalValue(_generalG),
+        2 * _generalValue(_generalF),
+        _generalValue(_generalC),
+      );
       setState(() {
         _result = result;
         _error = null;
@@ -118,6 +116,8 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
   }
 
   double _read(TextEditingController controller) => double.parse(controller.text.trim());
+
+  double _generalValue(TextEditingController controller) => double.parse(controller.text.trim());
 
   double _signedParabolaP() {
     final value = _read(_p);
@@ -195,16 +195,32 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Other equation', style: Theme.of(context).textTheme.titleMedium),
+        Text('General second-degree equation', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        TextFormField(
-          controller: _equation,
-          decoration: const InputDecoration(labelText: 'Ax² + Bxy + Cy² + Dx + Ey + F = 0', border: OutlineInputBorder()),
-          autocorrect: false,
+        Text('a x² + 2h xy + b y² + 2g x + 2f y + c = 0', style: Theme.of(context).textTheme.bodyLarge),
+        const SizedBox(height: 12),
+        _ParameterGrid(
+          children: [
+            _generalField('a', _generalA),
+            _generalField('b', _generalB),
+            _generalField('h', _generalH),
+            _generalField('g', _generalG),
+            _generalField('f', _generalF),
+            _generalField('c', _generalC),
+          ],
         ),
         const SizedBox(height: 12),
-        Text('Choose a template above to preload a known equation, then refine it here.', style: Theme.of(context).textTheme.bodySmall),
+        _GeneralConicConditions(
+          a: _tryGeneralValue(_generalA),
+          b: _tryGeneralValue(_generalB),
+          h: _tryGeneralValue(_generalH),
+          g: _tryGeneralValue(_generalG),
+          f: _tryGeneralValue(_generalF),
+          c: _tryGeneralValue(_generalC),
+        ),
         const SizedBox(height: 16),
+        OutlinedButton.icon(onPressed: _openGeneralGuidedEntry, icon: const Icon(Icons.dialpad_outlined), label: const Text('Fast coefficient entry')),
+        const SizedBox(height: 8),
         FilledButton.icon(onPressed: _generateEquation, icon: const Icon(Icons.auto_graph), label: const Text('Generate Graph')),
       ],
     );
@@ -215,6 +231,30 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
     keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
     decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
   );
+
+  Widget _generalField(String label, TextEditingController controller) => TextFormField(
+    controller: controller,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+    decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+    onChanged: (_) => setState(() {}),
+  );
+
+  double? _tryGeneralValue(TextEditingController controller) => double.tryParse(controller.text.trim());
+
+  void _openGeneralGuidedEntry() {
+    final controllers = [_generalA, _generalB, _generalH, _generalG, _generalF, _generalC];
+    GuidedNumberEntrySheet.show(
+      context,
+      title: 'General conic coefficients',
+      labels: const ['a (x²)', 'b (y²)', 'h (2hxy)', 'g (2gx)', 'f (2fy)', 'c (constant)'],
+      values: controllers.map((controller) => controller.text).toList(),
+      onValue: (index, value) {
+        controllers[index].text = value;
+        setState(() {});
+      },
+      onFinished: _generateEquation,
+    );
+  }
 
   Widget _directionPicker() => DropdownButtonFormField<String>(
     initialValue: _parabolaDirection,
@@ -326,4 +366,45 @@ class _StatusPanel extends StatelessWidget {
       child: SelectableText(message, style: TextStyle(color: isError ? colors.onErrorContainer : colors.onSecondaryContainer)),
     );
   }
+}
+
+class _GeneralConicConditions extends StatelessWidget {
+  const _GeneralConicConditions({required this.a, required this.b, required this.h, required this.g, required this.f, required this.c});
+
+  final double? a;
+  final double? b;
+  final double? h;
+  final double? g;
+  final double? f;
+  final double? c;
+
+  @override
+  Widget build(BuildContext context) {
+    if ([a, b, h, g, f, c].any((value) => value == null)) {
+      return const _StatusPanel(message: 'Enter all six numeric coefficients to calculate the determinant and conditions.', isError: true);
+    }
+    final determinant = a! * b! * c! + 2 * h! * g! * f! - a! * f! * f! - b! * g! * g! - c! * h! * h!;
+    final discriminant = h! * h! - a! * b!;
+    const tolerance = 1e-9;
+    final type = determinant.abs() < tolerance
+        ? 'Degenerate conic'
+        : discriminant < -tolerance
+            ? (h!.abs() < tolerance && (a! - b!).abs() < tolerance ? 'Circle' : 'Ellipse')
+            : discriminant > tolerance
+                ? 'Hyperbola'
+                : 'Parabola';
+    final conditions = [
+      'Determinant Delta = abc + 2hgf - af² - bg² - ch² = ${_format(determinant)}',
+      'h² - ab = ${_format(discriminant)}',
+      'Classification: $type',
+      'Circle condition: h = 0 and a = b, with h² - ab < 0.',
+      'Ellipse condition: h² - ab < 0.',
+      'Parabola condition: h² - ab = 0.',
+      'Hyperbola condition: h² - ab > 0.',
+      if (determinant.abs() < tolerance) 'Delta = 0: the equation is degenerate; it may represent lines, a point, or no real locus.',
+    ];
+    return _StatusPanel(message: conditions.join('\n'), isError: determinant.abs() < tolerance);
+  }
+
+  String _format(double value) => value.toStringAsPrecision(7).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
 }

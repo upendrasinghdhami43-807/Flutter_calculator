@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/guided_number_entry_sheet.dart';
 import 'equation_controller.dart';
 
 class EquationScreen extends ConsumerWidget {
@@ -85,7 +86,27 @@ class _PolynomialForm extends StatelessWidget {
             );
           },
         ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => _openGuidedEntry(context),
+          icon: const Icon(Icons.dialpad_outlined),
+          label: const Text('Fast coefficient entry'),
+        ),
       ],
+    );
+  }
+
+  void _openGuidedEntry(BuildContext context) {
+    GuidedNumberEntrySheet.show(
+      context,
+      title: 'Polynomial coefficients',
+      labels: List.generate(state.polynomialCoefficients.length, (index) {
+        final exponent = state.polynomialDegree - index;
+        return exponent == 0 ? 'Constant c' : exponent == 1 ? 'Coefficient of x' : 'Coefficient of x$exponent';
+      }),
+      values: state.polynomialCoefficients,
+      onValue: controller.setPolynomialCoefficient,
+      onFinished: controller.solve,
     );
   }
 }
@@ -148,7 +169,36 @@ class _SystemForm extends StatelessWidget {
               ),
           ],
         ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => _openGuidedEntry(context),
+          icon: const Icon(Icons.dialpad_outlined),
+          label: const Text('Fast system entry'),
+        ),
       ],
+    );
+  }
+
+  void _openGuidedEntry(BuildContext context) {
+    final size = state.systemSize;
+    final labels = [
+      for (var index = 0; index < state.systemCoefficients.length; index++) 'Coefficient a${index ~/ size + 1}${index % size + 1}',
+      for (var index = 0; index < state.systemConstants.length; index++) 'Constant b${index + 1}',
+    ];
+    final values = [...state.systemCoefficients, ...state.systemConstants];
+    GuidedNumberEntrySheet.show(
+      context,
+      title: 'System coefficients',
+      labels: labels,
+      values: values,
+      onValue: (index, value) {
+        if (index < state.systemCoefficients.length) {
+          controller.setSystemCoefficient(index, value);
+        } else {
+          controller.setSystemConstant(index - state.systemCoefficients.length, value);
+        }
+      },
+      onFinished: controller.solve,
     );
   }
 }

@@ -9,6 +9,7 @@ class GuidedNumberEntrySheet extends StatefulWidget {
     required this.labels,
     required this.values,
     required this.onValue,
+    this.onFinished,
     super.key,
   });
 
@@ -16,6 +17,7 @@ class GuidedNumberEntrySheet extends StatefulWidget {
   final List<String> labels;
   final List<String> values;
   final void Function(int index, String value) onValue;
+  final VoidCallback? onFinished;
 
   static Future<void> show(
     BuildContext context, {
@@ -23,11 +25,12 @@ class GuidedNumberEntrySheet extends StatefulWidget {
     required List<String> labels,
     required List<String> values,
     required void Function(int index, String value) onValue,
+    VoidCallback? onFinished,
   }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => GuidedNumberEntrySheet(title: title, labels: labels, values: values, onValue: onValue),
+      builder: (_) => GuidedNumberEntrySheet(title: title, labels: labels, values: values, onValue: onValue, onFinished: onFinished),
     );
   }
 
@@ -61,6 +64,7 @@ class _GuidedNumberEntrySheetState extends State<GuidedNumberEntrySheet> {
   void _next() {
     _commitCurrent();
     if (_index == widget.labels.length - 1) {
+      widget.onFinished?.call();
       Navigator.of(context).pop();
       return;
     }
