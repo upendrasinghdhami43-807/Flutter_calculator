@@ -1,20 +1,67 @@
-# flutter_calce
+# Flutter Advanced Mathematical Calculator 🧮
 
-A new Flutter project.
+[![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/upendrasinghdhami43-807/Flutter_calculator/blob/main/LICENSE)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart)](https://dart.dev/)
 
-## Getting Started
+A comprehensive, multi-platform, powerful calculator built with **Flutter**. This application ranges from simple daily arithmetic to complex scientific and advanced engineering mathematics, all processed locally without relying on external mathematical APIs.
 
-This project is a starting point for a Flutter application.
+## ✨ Features
 
-A few resources to get you started if this is your first Flutter project:
+### 🟢 Phase 1: Basic Calculator
+- Standard arithmetic operations (+, -, *, /)
+- Clean, intuitive, and responsive UI
+- History ribbon
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### 🔵 Phase 2: Scientific (Pro) Mode
+- Advanced mathematical operations (trigonometry, logarithms, exponentials)
+- Support for complex string parsing and evaluation (`ExpressionEvaluator`)
+- Formatted expressions and intelligent cursor handling
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 🟣 Phase 3: Advanced Engineering Mathematics
+- **Matrix Operations**: Determinant, Inverse, Eigenvalues/Eigenvectors, Adjoint. Supports fast-entry UI up to 4x4.
+- **Equation Solver**: Solves linear systems of equations and polynomial root finding. 
+- **Graphing Engine**: Beautiful, interactive function plotting (e.g., `sin(x)*e^x`). Supports pinch-to-zoom, panning, and coordinate inspections.
+- **Conic Sections**: Dynamically inputs generic variables ($Ax^2 + Bxy + ...$) and renders geometric shapes classifying them in real time (Hyperbolas, Parabolas, Ellipses).
+- **Calculus**: Symbolic differentiation, numeric integration (Simpson's Rule), and root bounding. *(UI currently in progress)*
+
+## 🛠️ Architecture
+- **Framework**: Flutter
+- **State Management**: `flutter_riverpod` (using `NotifierProvider`)
+- **Graphics**: `CustomPainter` & `InteractiveViewer` customized for mathematical coordinate spaces.
+- **Algorithms**: Written strictly in Dart (Durand-Kerner, Gauss-Jordan, QR Algorithm, Numerical differentiation).
+
+## 🚀 Getting Started
+
+### Prerequisites
+- [Flutter SDK](https://flutter.dev/docs/get-started/install)
+- Dart SDK
+
+### Installation
+1. Clone the repository
+```bash
+git clone https://github.com/upendrasinghdhami43-807/Flutter_calculator.git
+```
+2. Navigate to the project directory
+```bash
+cd Flutter_calculator
+```
+3. Get Flutter packages
+```bash
+flutter pub get
+```
+4. Run the application
+```bash
+flutter run
+```
+
+## 🤝 Contributing
+Contributions, issues, and feature requests are welcome!
+Feel free to check out the [issues page](https://github.com/upendrasinghdhami43-807/Flutter_calculator/issues).
+If you'd like to contribute, please read our [CONTRIBUTING.md](CONTRIBUTING.md) guide.
+
+## 📄 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Project Structure
 
