@@ -41,6 +41,23 @@ class _ConicGraphViewState extends State<ConicGraphView> {
     _transformController.value = current;
   }
 
+  void _selectPoint(Offset localPosition) {
+    final painter = ConicPainter(widget.result);
+    Point2D? nearest;
+    var nearestDistance = double.infinity;
+    for (final segment in widget.result.curveSegments) {
+      for (final point in segment) {
+        final screen = painter.toScreen(point, _canvasSize);
+        final distance = (screen - localPosition).distanceSquared;
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearest = point;
+        }
+      }
+    }
+    if (nearest != null) setState(() => _selectedPoint = nearest);
+  }
+
   @override
   Widget build(BuildContext context) {
     final painter = ConicPainter(widget.result, selectedPoint: _selectedPoint);
@@ -62,7 +79,7 @@ class _ConicGraphViewState extends State<ConicGraphView> {
               maxScale: 5,
               constrained: false,
               child: GestureDetector(
-                onTapDown: (details) => setState(() => _selectedPoint = painter.pointAt(details.localPosition, _canvasSize)),
+                onTapDown: (details) => _selectPoint(details.localPosition),
                 child: SizedBox(
                   width: _canvasSize.width,
                   height: _canvasSize.height,

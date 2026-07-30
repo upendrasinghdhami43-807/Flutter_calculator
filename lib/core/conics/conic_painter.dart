@@ -28,6 +28,15 @@ class ConicPainter extends CustomPainter {
       bounds.center.dy - (position.dy - size.height / 2) / scale,
     );
   }
+  /// Converts a coordinate in the equation's world space to the canvas screen space.
+  Offset toScreen(Point2D point, Size size) {
+    final bounds = _computeWorldBounds(size);
+    final scale = _computeScale(size, bounds);
+    return Offset(
+      size.width / 2 + (point.x - bounds.center.dx) * scale,
+      size.height / 2 - (point.y - bounds.center.dy) * scale,
+    );
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -38,7 +47,7 @@ class ConicPainter extends CustomPainter {
 
     final bounds = _computeWorldBounds(size);
     final scale = _computeScale(size, bounds);
-    Offset toScreen(Point2D p) => Offset(size.width / 2 + (p.x - bounds.center.dx) * scale, size.height / 2 - (p.y - bounds.center.dy) * scale);
+    Offset localToScreen(Point2D p) => toScreen(p, size);
 
     if (showGrid) _paintGrid(canvas, size, bounds.center, scale);
     _paintAxes(canvas, size, bounds.center, scale);
@@ -48,14 +57,14 @@ class ConicPainter extends CustomPainter {
       ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
     for (final segment in result.directrixSegments) {
-      canvas.drawLine(toScreen(segment.start), toScreen(segment.end), guidePaint);
+      canvas.drawLine(localToScreen(segment.start), localToScreen(segment.end), guidePaint);
     }
     final asymptotePaint = Paint()
       ..color = Colors.purple.withValues(alpha: 0.8)
       ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
     for (final segment in result.asymptoteSegments) {
-      canvas.drawLine(toScreen(segment.start), toScreen(segment.end), asymptotePaint);
+      canvas.drawLine(localToScreen(segment.start), localToScreen(segment.end), asymptotePaint);
     }
 
     final curvePaint = Paint()
@@ -64,24 +73,24 @@ class ConicPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     for (final segment in result.curveSegments) {
       if (segment.length < 2) continue;
-      final path = Path()..moveTo(toScreen(segment.first).dx, toScreen(segment.first).dy);
+      final path = Path()..moveTo(localToScreen(segment.first).dx, localToScreen(segment.first).dy);
       for (final point in segment.skip(1)) {
-        final screen = toScreen(point);
+        final screen = localToScreen(point);
         path.lineTo(screen.dx, screen.dy);
       }
       canvas.drawPath(path, curvePaint);
     }
 
-    _paintLabeledPoint(canvas, toScreen(result.center), 'C', Colors.black);
+    _paintLabeledPoint(canvas, localToScreen(result.center), 'C', Colors.black);
     for (var i = 0; i < result.vertices.length; i++) {
-      _paintLabeledPoint(canvas, toScreen(result.vertices[i]), 'V${i + 1}', Colors.green.shade700);
+      _paintLabeledPoint(canvas, localToScreen(result.vertices[i]), 'V${i + 1}', Colors.green.shade700);
     }
     for (var i = 0; i < result.foci.length; i++) {
-      _paintLabeledPoint(canvas, toScreen(result.foci[i]), 'F${i + 1}', Colors.red.shade700);
+      _paintLabeledPoint(canvas, localToScreen(result.foci[i]), 'F${i + 1}', Colors.red.shade700);
     }
 
     if (selectedPoint != null) {
-      final selected = toScreen(selectedPoint!);
+      final selected = localToScreen(selectedPoint!);
       
       // Crosshair lines
       final crossPaint = Paint()
