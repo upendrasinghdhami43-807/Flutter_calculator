@@ -14,7 +14,7 @@ void main() {
 
     await tester.tap(find.text('Matrix'));
     await tester.pumpAndSettle();
-    expect(find.text('Matrix A'), findsOneWidget);
+    expect(find.text('Build a matrix'), findsOneWidget);
 
     await tester.pageBack();
     await tester.pumpAndSettle();

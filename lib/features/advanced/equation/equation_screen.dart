@@ -170,10 +170,24 @@ class _SystemForm extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => _openGuidedEntry(context),
-          icon: const Icon(Icons.dialpad_outlined),
-          label: const Text('Fast system entry'),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _openGuidedEntry(context),
+                icon: const Icon(Icons.dialpad_outlined, size: 18),
+                label: const Text('Fast entry'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: controller.solve,
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Solve'),
+              ),
+            ),
+          ],
         ),
       ],
     );

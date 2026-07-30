@@ -33,15 +33,15 @@ class _FunctionGraphViewState extends State<FunctionGraphView> {
     final next = (current * factor).clamp(0.6, 5.0);
     final center = Offset(_canvasSize.width / 2, _canvasSize.height / 2);
     final matrix = Matrix4.identity()
-      ..translateByDouble(center.dx, center.dy)
-      ..scaleByDouble(next)
-      ..translateByDouble(-center.dx, -center.dy);
+      ..translateByDouble(center.dx, center.dy, 0.0, 1.0)
+      ..scaleByDouble(next, next, 1.0, 1.0)
+      ..translateByDouble(-center.dx, -center.dy, 0.0, 1.0);
     _transformController.value = matrix;
   }
 
   void _pan(double dx, double dy) {
     final current = _transformController.value.clone();
-    current.translateByDouble(dx, dy);
+    current.translateByDouble(dx, dy, 0.0, 1.0);
     _transformController.value = current;
   }
 
