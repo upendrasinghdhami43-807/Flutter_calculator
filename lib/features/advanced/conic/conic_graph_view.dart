@@ -43,7 +43,7 @@ class _ConicGraphViewState extends State<ConicGraphView> {
 
   @override
   Widget build(BuildContext context) {
-    final painter = ConicPainter(widget.result);
+    final painter = ConicPainter(widget.result, selectedPoint: _selectedPoint);
     final colors = Theme.of(context).colorScheme;
 
     return DecoratedBox(

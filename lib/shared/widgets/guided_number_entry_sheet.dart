@@ -193,41 +193,30 @@ class _GuidedNumberEntrySheetState extends State<GuidedNumberEntrySheet> with Si
                 children: [
                   for (final key in const ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '-'])
                     _NumPadKey(label: key, onTap: () => _append(key)),
+                  _NumPadActionKey(label: 'Clear', onTap: () => _controller.clear()),
+                  _NumPadActionKey(label: 'Skip', onTap: _skip),
+                  _NumPadActionKey(label: '⌫', onTap: () {
+                    final text = _controller.text;
+                    if (text.isEmpty) return;
+                    _controller.text = text.substring(0, text.length - 1);
+                  }),
                 ],
               ),
               const SizedBox(height: 10),
               // Action row
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Backspace
-                  IconButton(
-                    tooltip: 'Backspace',
-                    onPressed: () {
-                      final text = _controller.text;
-                      if (text.isEmpty) return;
-                      _controller.text = text.substring(0, text.length - 1);
-                    },
-                    icon: const Icon(Icons.backspace_outlined, size: 20),
-                  ),
-                  // Clear
-                  TextButton(
-                    onPressed: () => _controller.clear(),
-                    child: const Text('Clear'),
-                  ),
-                  // Skip
-                  TextButton(
-                    onPressed: _skip,
-                    child: Text('Skip', style: TextStyle(color: colors.onSurfaceVariant)),
-                  ),
-                  const Spacer(),
                   // Previous
                   if (_index > 0)
                     OutlinedButton.icon(
                       onPressed: _previous,
                       icon: const Icon(Icons.arrow_back, size: 16),
                       label: const Text('Prev', style: TextStyle(fontSize: 12)),
-                    ),
-                  const SizedBox(width: 6),
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  
                   // Next / Finish
                   FilledButton.icon(
                     onPressed: _next,
@@ -262,6 +251,31 @@ class _NumPadKey extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NumPadActionKey extends StatelessWidget {
+  const _NumPadActionKey({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       ),

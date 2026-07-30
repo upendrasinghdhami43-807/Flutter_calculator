@@ -9,10 +9,11 @@ import 'conic_result.dart';
 /// screen for pinch-zoom/pan, so this painter always fits the whole shape
 /// to the given canvas size.
 class ConicPainter extends CustomPainter {
-  ConicPainter(this.result, {this.showGrid = true});
+  ConicPainter(this.result, {this.showGrid = true, this.selectedPoint});
 
   final ConicResult result;
   final bool showGrid;
+  final Point2D? selectedPoint;
 
   static const double _margin = 32;
 
@@ -78,7 +79,34 @@ class ConicPainter extends CustomPainter {
     for (var i = 0; i < result.foci.length; i++) {
       _paintLabeledPoint(canvas, toScreen(result.foci[i]), 'F${i + 1}', Colors.red.shade700);
     }
+
+    if (selectedPoint != null) {
+      final selected = toScreen(selectedPoint!);
+      
+      // Crosshair lines
+      final crossPaint = Paint()
+        ..color = Colors.red.withValues(alpha: 0.4)
+        ..strokeWidth = 0.8;
+      canvas.drawLine(Offset(selected.dx, 0), Offset(selected.dx, size.height), crossPaint);
+      canvas.drawLine(Offset(0, selected.dy), Offset(size.width, selected.dy), crossPaint);
+      
+      // Point dot
+      canvas.drawCircle(selected, 6, Paint()..color = Colors.red.withValues(alpha: 0.3));
+      canvas.drawCircle(selected, 4, Paint()..color = Colors.red);
+      
+      // Coordinate label
+      final painter = TextPainter(
+        text: TextSpan(
+          text: '(${_format(selectedPoint!.x)}, ${_format(selectedPoint!.y)})',
+          style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      painter.paint(canvas, selected + const Offset(10, -22));
+    }
   }
+
+  String _format(double value) => value.toStringAsPrecision(6).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
 
   void _paintMessage(Canvas canvas, Size size, String message) {
     final painter = TextPainter(
@@ -174,7 +202,8 @@ class ConicPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant ConicPainter oldDelegate) => oldDelegate.result != result || oldDelegate.showGrid != showGrid;
+  bool shouldRepaint(covariant ConicPainter oldDelegate) => 
+    oldDelegate.result != result || oldDelegate.showGrid != showGrid || oldDelegate.selectedPoint != selectedPoint;
 }
 
 class _WorldBounds {

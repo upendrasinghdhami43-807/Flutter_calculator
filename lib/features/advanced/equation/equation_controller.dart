@@ -12,9 +12,9 @@ class EquationState {
     this.tool = EquationTool.polynomial,
     this.polynomialDegree = 2,
     this.systemSize = 2,
-    this.polynomialCoefficients = const ['1', '0', '0'],
-    this.systemCoefficients = const ['1', '0', '0', '1'],
-    this.systemConstants = const ['0', '0'],
+    this.polynomialCoefficients = const ['', '', ''],
+    this.systemCoefficients = const ['', '', '', ''],
+    this.systemConstants = const ['', ''],
     this.result,
     this.error,
   });
@@ -114,7 +114,7 @@ class EquationController extends Notifier<EquationState> {
     return const SystemEquationSolver().solveAndFormat(coefficients, constants);
   }
 
-  List<String> _resize(List<String> source, int count) => List.generate(count, (index) => index < source.length ? source[index] : '0');
+  List<String> _resize(List<String> source, int count) => List.generate(count, (index) => index < source.length ? source[index] : '');
 }
 
 final equationControllerProvider = NotifierProvider<EquationController, EquationState>(EquationController.new);

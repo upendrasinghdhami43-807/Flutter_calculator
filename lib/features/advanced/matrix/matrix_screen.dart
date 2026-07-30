@@ -14,6 +14,7 @@ class MatrixScreen extends ConsumerStatefulWidget {
 class _MatrixScreenState extends ConsumerState<MatrixScreen> {
   var _leftName = 'A';
   var _rightName = 'B';
+  var _targetName = 'A';
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +114,14 @@ class _MatrixScreenState extends ConsumerState<MatrixScreen> {
               // Single-matrix operations
               Text('Single-matrix operations', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
-              _OperationGrid(onExecute: controller.execute),
+              Row(
+                children: [
+                  Expanded(child: _MatrixNamePicker(label: 'Target Matrix', value: _targetName, onChanged: (v) => setState(() => _targetName = v))),
+                  const Spacer(),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _OperationGrid(onExecute: (op) => controller.executeSingleSaved(op, _targetName)),
               const SizedBox(height: 20),
 
               // A/B/C operations

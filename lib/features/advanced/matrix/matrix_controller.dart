@@ -23,8 +23,8 @@ class MatrixToolState {
   const MatrixToolState({
     this.rows = 2,
     this.columns = 2,
-    this.values = const ['0', '0', '0', '0'],
-    this.secondaryValues = const ['0', '0', '0', '0'],
+    this.values = const ['', '', '', ''],
+    this.secondaryValues = const ['', '', '', ''],
     this.savedMatrices = const {},
     this.result,
     this.error,
@@ -156,6 +156,27 @@ class MatrixController extends Notifier<MatrixToolState> {
     }
   }
 
+  void executeSingleSaved(MatrixOperation operation, String targetName) {
+    try {
+      final matrix = _readSaved(targetName);
+      final labelPrefix = targetName;
+      final result = switch (operation) {
+        MatrixOperation.determinant => 'det($labelPrefix) = ${_format(matrix.determinant())}',
+        MatrixOperation.inverse => _formatMatrix('$labelPrefix⁻¹', matrix.inverse()),
+        MatrixOperation.transpose => _formatMatrix('$labelPrefixᵀ', matrix.transpose()),
+        MatrixOperation.rank => 'rank($labelPrefix) = ${matrix.rank()}',
+        MatrixOperation.eigenvalues => _formatValues('Eigenvalues ($labelPrefix)', const EigenSolver().realEigenvalues(matrix)),
+        _ => throw const MathDomainException('Invalid operation.'),
+      };
+      state = state.copyWith(result: result, clearError: true);
+      ref.read(historyServiceProvider.notifier).add(mode: 'Matrix', expression: operation.name, result: result);
+    } on MathException catch (error) {
+      state = state.copyWith(error: error.message);
+    } on FormatException {
+      state = state.copyWith(error: 'Every saved matrix cell must contain a valid number.');
+    }
+  }
+
   Matrix _readSaved(String name) {
     final saved = state.savedMatrices[name.toUpperCase()];
     if (saved == null) throw MathDomainException('Save matrix ${name.toUpperCase()} before using it in an operation.');
@@ -176,7 +197,7 @@ class MatrixController extends Notifier<MatrixToolState> {
     return Matrix(values);
   }
 
-  List<String> _resize(List<String> source, int count) => List.generate(count, (index) => index < source.length ? source[index] : '0');
+  List<String> _resize(List<String> source, int count) => List.generate(count, (index) => index < source.length ? source[index] : '');
 
   String _formatMatrix(String label, Matrix matrix) {
     final rows = matrix.values.map((row) => '[${row.map(_format).join(', ')}]').join('\n');
