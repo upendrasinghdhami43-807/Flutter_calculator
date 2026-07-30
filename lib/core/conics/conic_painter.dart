@@ -16,6 +16,18 @@ class ConicPainter extends CustomPainter {
 
   static const double _margin = 32;
 
+  /// Converts a tap in this painter's canvas space back to the equation's
+  /// original x/y coordinate system. Consumers use it to show an inspected
+  /// coordinate in the interactive graph view.
+  Point2D pointAt(Offset position, Size size) {
+    final bounds = _computeWorldBounds(size);
+    final scale = _computeScale(size, bounds);
+    return Point2D(
+      bounds.center.dx + (position.dx - size.width / 2) / scale,
+      bounds.center.dy - (position.dy - size.height / 2) / scale,
+    );
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     if (result.isDegenerate) {

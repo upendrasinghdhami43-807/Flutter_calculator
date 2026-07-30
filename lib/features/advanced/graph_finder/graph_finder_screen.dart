@@ -8,6 +8,7 @@ class GraphFinderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const ConicWorkspace(
     title: 'Graph Finder',
-    subtitle: 'Choose a shape template and parameters, or enter another canonical second-degree equation.',
+    subtitle: 'Choose a shape template and parameters, enter a general second-degree equation, or plot a supported function of x.',
+    includeFunctionGraphs: true,
   );
 }

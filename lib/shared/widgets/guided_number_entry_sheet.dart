@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 /// A focused numeric-entry workflow for dense engineering forms. The user
 /// enters one value with the built-in keypad, taps Next, and is advanced to
 /// the following coefficient or matrix cell. Finish commits the final value.
+/// Features: progress bar, animated transitions, skip button, keyboard support.
 class GuidedNumberEntrySheet extends StatefulWidget {
   const GuidedNumberEntrySheet({
     required this.title,
@@ -38,7 +39,7 @@ class GuidedNumberEntrySheet extends StatefulWidget {
   State<GuidedNumberEntrySheet> createState() => _GuidedNumberEntrySheetState();
 }
 
-class _GuidedNumberEntrySheetState extends State<GuidedNumberEntrySheet> {
+class _GuidedNumberEntrySheetState extends State<GuidedNumberEntrySheet> with SingleTickerProviderStateMixin {
   late final List<String> _values;
   late final TextEditingController _controller;
   var _index = 0;
@@ -85,6 +86,20 @@ class _GuidedNumberEntrySheetState extends State<GuidedNumberEntrySheet> {
     });
   }
 
+  void _skip() {
+    // Move to next without changing value
+    if (_index == widget.labels.length - 1) {
+      widget.onFinished?.call();
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {
+      _index++;
+      _controller.text = _values[_index];
+      _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
+    });
+  }
+
   void _append(String value) {
     final current = _controller.text;
     if (value == '.' && current.contains('.')) return;
@@ -96,58 +111,157 @@ class _GuidedNumberEntrySheetState extends State<GuidedNumberEntrySheet> {
   @override
   Widget build(BuildContext context) {
     final isLast = _index == widget.labels.length - 1;
+    final progress = ((_index + 1) / widget.labels.length);
+    final colors = Theme.of(context).colorScheme;
+
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Header
               Row(
                 children: [
-                  Expanded(child: Text(widget.title, style: Theme.of(context).textTheme.titleLarge)),
-                  Text('${_index + 1} / ${widget.labels.length}', style: Theme.of(context).textTheme.labelLarge),
+                  Expanded(
+                    child: Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colors.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_index + 1} / ${widget.labels.length}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: colors.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text(widget.labels[_index], style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
+              // Progress bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 4,
+                  backgroundColor: colors.surfaceContainerHighest,
+                  color: colors.primary,
+                ),
+              ),
+              const SizedBox(height: 14),
+              // Current label
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Text(
+                  widget.labels[_index],
+                  key: ValueKey(_index),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Value input
               TextField(
                 controller: _controller,
                 readOnly: true,
                 textAlign: TextAlign.end,
-                style: Theme.of(context).textTheme.headlineSmall,
-                decoration: const InputDecoration(border: OutlineInputBorder()),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontFamily: 'monospace'),
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  filled: true,
+                  fillColor: colors.surfaceContainerLowest,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
+              // Number pad
               GridView.count(
                 shrinkWrap: true,
                 crossAxisCount: 3,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 1.9,
+                mainAxisSpacing: 6,
+                crossAxisSpacing: 6,
+                childAspectRatio: 2.0,
                 children: [
                   for (final key in const ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '-'])
-                    OutlinedButton(onPressed: () => _append(key), child: Text(key, style: const TextStyle(fontSize: 18))),
+                    _NumPadKey(label: key, onTap: () => _append(key)),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
+              // Action row
               Row(
                 children: [
-                  IconButton(tooltip: 'Backspace', onPressed: () {
-                    final text = _controller.text;
-                    if (text.isEmpty) return;
-                    _controller.text = text.substring(0, text.length - 1);
-                  }, icon: const Icon(Icons.backspace_outlined)),
-                  TextButton(onPressed: () => _controller.clear(), child: const Text('Clear')),
+                  // Backspace
+                  IconButton(
+                    tooltip: 'Backspace',
+                    onPressed: () {
+                      final text = _controller.text;
+                      if (text.isEmpty) return;
+                      _controller.text = text.substring(0, text.length - 1);
+                    },
+                    icon: const Icon(Icons.backspace_outlined, size: 20),
+                  ),
+                  // Clear
+                  TextButton(
+                    onPressed: () => _controller.clear(),
+                    child: const Text('Clear'),
+                  ),
+                  // Skip
+                  TextButton(
+                    onPressed: _skip,
+                    child: Text('Skip', style: TextStyle(color: colors.onSurfaceVariant)),
+                  ),
                   const Spacer(),
-                  OutlinedButton.icon(onPressed: _index == 0 ? null : _previous, icon: const Icon(Icons.arrow_back), label: const Text('Previous')),
-                  const SizedBox(width: 8),
-                  FilledButton.icon(onPressed: _next, icon: Icon(isLast ? Icons.check : Icons.arrow_forward), label: Text(isLast ? 'Finish' : 'Next')),
+                  // Previous
+                  if (_index > 0)
+                    OutlinedButton.icon(
+                      onPressed: _previous,
+                      icon: const Icon(Icons.arrow_back, size: 16),
+                      label: const Text('Prev', style: TextStyle(fontSize: 12)),
+                    ),
+                  const SizedBox(width: 6),
+                  // Next / Finish
+                  FilledButton.icon(
+                    onPressed: _next,
+                    icon: Icon(isLast ? Icons.check : Icons.arrow_forward, size: 16),
+                    label: Text(isLast ? 'Finish' : 'Next', style: const TextStyle(fontSize: 12)),
+                  ),
                 ],
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NumPadKey extends StatelessWidget {
+  const _NumPadKey({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Center(
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
           ),
         ),
       ),

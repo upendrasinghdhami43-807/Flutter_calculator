@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/expression_engine/evaluator.dart';
 import '../../shared/widgets/history_panel.dart';
 import 'scientific_controller.dart';
 import 'widgets/mode_selector_sheet.dart';
@@ -11,6 +12,12 @@ import 'widgets/tools_sheet.dart';
 
 class ScientificScreen extends ConsumerWidget {
   const ScientificScreen({super.key});
+
+  String _angleLabel(AngleUnit unit) => switch (unit) {
+    AngleUnit.degrees => 'DEG',
+    AngleUnit.radians => 'RAD',
+    AngleUnit.gradians => 'GRAD',
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,33 +46,45 @@ class ScientificScreen extends ConsumerWidget {
         ),
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Column(
               children: [
-                ProDisplay(expression: state.expression, result: state.result, error: state.error, hasMemory: state.memory != 0),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ModifierButton(
-                        label: 'SHIFT',
-                        active: state.shiftActive,
-                        color: Theme.of(context).colorScheme.tertiary,
-                        onTap: controller.toggleShift,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _ModifierButton(
-                        label: 'ALPHA',
-                        active: state.alphaActive,
-                        color: Theme.of(context).colorScheme.error,
-                        onTap: controller.toggleAlpha,
-                      ),
-                    ),
-                  ],
+                // Display takes ~25% of vertical space
+                ProDisplay(
+                  expression: state.expression,
+                  result: state.result,
+                  error: state.error,
+                  hasMemory: state.memory != 0,
+                  angleLabel: _angleLabel(state.angleUnit),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
+                // SHIFT / ALPHA modifier row
+                SizedBox(
+                  height: 36,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _ModifierButton(
+                          label: 'SHIFT',
+                          active: state.shiftActive,
+                          color: Theme.of(context).colorScheme.tertiary,
+                          onTap: controller.toggleShift,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _ModifierButton(
+                          label: 'ALPHA',
+                          active: state.alphaActive,
+                          color: Theme.of(context).colorScheme.error,
+                          onTap: controller.toggleAlpha,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                // Keypad takes remaining space
                 Expanded(child: ScientificKeypad(state: state, controller: controller)),
               ],
             ),
@@ -86,14 +105,29 @@ class _ModifierButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        backgroundColor: active ? color : null,
-        foregroundColor: active ? Colors.white : color,
-        side: BorderSide(color: color),
+    return Material(
+      color: active ? color : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color, width: 1.5),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: active ? Colors.white : color,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
       ),
-      onPressed: onTap,
-      child: Text(label),
     );
   }
 }

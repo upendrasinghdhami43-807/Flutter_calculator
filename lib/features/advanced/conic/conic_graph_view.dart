@@ -1,26 +1,22 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/graphing/function_graph.dart';
-import '../../../core/graphing/function_graph_painter.dart';
+import '../../../core/conics/conic_painter.dart';
+import '../../../core/conics/conic_result.dart';
 
-/// An inspectable function graph canvas. InteractiveViewer provides panning
-/// and pinch zoom; the explicit +/- controls are retained for one-handed use.
-/// Tapping shows crosshair lines through the selected point with coordinates.
-class FunctionGraphView extends StatefulWidget {
-  const FunctionGraphView({required this.expression, required this.segments, this.fullscreen = false, super.key});
+class ConicGraphView extends StatefulWidget {
+  const ConicGraphView({required this.result, this.fullscreen = false, super.key});
 
-  final String expression;
-  final List<List<FunctionGraphPoint>> segments;
+  final ConicResult result;
   final bool fullscreen;
 
   @override
-  State<FunctionGraphView> createState() => _FunctionGraphViewState();
+  State<ConicGraphView> createState() => _ConicGraphViewState();
 }
 
-class _FunctionGraphViewState extends State<FunctionGraphView> {
+class _ConicGraphViewState extends State<ConicGraphView> {
   static const _canvasSize = Size(1000, 700);
   final _transformController = TransformationController();
-  FunctionGraphPoint? _selectedPoint;
+  Point2D? _selectedPoint;
 
   @override
   void dispose() {
@@ -45,26 +41,9 @@ class _FunctionGraphViewState extends State<FunctionGraphView> {
     _transformController.value = current;
   }
 
-  void _selectPoint(Offset localPosition) {
-    final painter = FunctionGraphPainter(segments: widget.segments);
-    FunctionGraphPoint? nearest;
-    var nearestDistance = double.infinity;
-    for (final segment in widget.segments) {
-      for (final point in segment) {
-        final screen = painter.screenPoint(point, _canvasSize);
-        final distance = (screen - localPosition).distanceSquared;
-        if (distance < nearestDistance) {
-          nearestDistance = distance;
-          nearest = point;
-        }
-      }
-    }
-    if (nearest != null) setState(() => _selectedPoint = nearest);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final painter = FunctionGraphPainter(segments: widget.segments, selectedPoint: _selectedPoint);
+    final painter = ConicPainter(widget.result);
     final colors = Theme.of(context).colorScheme;
 
     return DecoratedBox(
@@ -83,7 +62,7 @@ class _FunctionGraphViewState extends State<FunctionGraphView> {
               maxScale: 5,
               constrained: false,
               child: GestureDetector(
-                onTapDown: (details) => _selectPoint(details.localPosition),
+                onTapDown: (details) => setState(() => _selectedPoint = painter.pointAt(details.localPosition, _canvasSize)),
                 child: SizedBox(
                   width: _canvasSize.width,
                   height: _canvasSize.height,
@@ -91,7 +70,7 @@ class _FunctionGraphViewState extends State<FunctionGraphView> {
                 ),
               ),
             ),
-            // Controls - top right
+            // Controls
             Positioned(
               top: 8,
               right: 8,
@@ -121,7 +100,7 @@ class _FunctionGraphViewState extends State<FunctionGraphView> {
                         IconButton(
                           tooltip: 'Full screen',
                           onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(builder: (_) => _FunctionGraphFullscreen(expression: widget.expression, segments: widget.segments)),
+                            MaterialPageRoute<void>(builder: (_) => _ConicGraphFullscreen(result: widget.result)),
                           ),
                           icon: const Icon(Icons.fullscreen, size: 20),
                         ),
@@ -130,7 +109,7 @@ class _FunctionGraphViewState extends State<FunctionGraphView> {
                 ),
               ),
             ),
-            // Coordinate info - bottom left
+            // Coordinate info
             Positioned(
               left: 10,
               bottom: 10,
@@ -143,7 +122,7 @@ class _FunctionGraphViewState extends State<FunctionGraphView> {
                 ),
                 child: Text(
                   _selectedPoint == null
-                      ? 'Tap the curve to inspect a point'
+                      ? 'Tap the graph to inspect a coordinate'
                       : 'x = ${_format(_selectedPoint!.x)}, y = ${_format(_selectedPoint!.y)}',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     fontFamily: 'monospace',
@@ -161,19 +140,18 @@ class _FunctionGraphViewState extends State<FunctionGraphView> {
   String _format(double value) => value.toStringAsPrecision(6).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
 }
 
-class _FunctionGraphFullscreen extends StatelessWidget {
-  const _FunctionGraphFullscreen({required this.expression, required this.segments});
+class _ConicGraphFullscreen extends StatelessWidget {
+  const _ConicGraphFullscreen({required this.result});
 
-  final String expression;
-  final List<List<FunctionGraphPoint>> segments;
+  final ConicResult result;
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text('y = $expression')),
+    appBar: AppBar(title: Text(result.shapeName)),
     body: SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(4),
-        child: FunctionGraphView(expression: expression, segments: segments, fullscreen: true),
+        child: ConicGraphView(result: result, fullscreen: true),
       ),
     ),
   );

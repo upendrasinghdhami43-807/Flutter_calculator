@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/conics/conic_painter.dart';
 import '../../../core/conics/conic_result.dart';
 import '../../../core/conics/conic_solver.dart';
 import '../../../core/expression_engine/errors.dart';
+import '../../../core/graphing/function_graph.dart';
 import '../../../shared/widgets/guided_number_entry_sheet.dart';
+import 'conic_graph_view.dart';
+import '../graph_finder/function_graph_view.dart';
 
 enum ManualConicShape { circle, ellipse, parabola, hyperbola, rectangularHyperbola }
 
@@ -13,10 +15,11 @@ enum ManualConicShape { circle, ellipse, parabola, hyperbola, rectangularHyperbo
 /// the same [ConicPainter], so a visual graph and its reported values cannot
 /// disagree because of duplicate classification code.
 class ConicWorkspace extends StatefulWidget {
-  const ConicWorkspace({required this.title, required this.subtitle, super.key});
+  const ConicWorkspace({required this.title, required this.subtitle, this.includeFunctionGraphs = false, super.key});
 
   final String title;
   final String subtitle;
+  final bool includeFunctionGraphs;
 
   @override
   State<ConicWorkspace> createState() => _ConicWorkspaceState();
@@ -24,6 +27,7 @@ class ConicWorkspace extends StatefulWidget {
 
 class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProviderStateMixin {
   final _solver = const ConicSolver();
+  final _functionGraphEngine = const FunctionGraphEngine();
   late final TabController _tabs;
   final _centerX = TextEditingController(text: '0');
   final _centerY = TextEditingController(text: '0');
@@ -37,22 +41,24 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
   final _generalG = TextEditingController(text: '0');
   final _generalF = TextEditingController(text: '0');
   final _generalC = TextEditingController(text: '-4');
+  final _functionExpression = TextEditingController(text: 'sin(x)');
   ManualConicShape _shape = ManualConicShape.circle;
   String _parabolaDirection = 'Up';
   String _hyperbolaAxis = 'Horizontal';
   ConicResult? _result;
+  List<List<FunctionGraphPoint>>? _functionSegments;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
+    _tabs = TabController(length: widget.includeFunctionGraphs ? 3 : 2, vsync: this);
   }
 
   @override
   void dispose() {
     _tabs.dispose();
-    for (final controller in [_centerX, _centerY, _radius, _axisX, _axisY, _p, _generalA, _generalB, _generalH, _generalG, _generalF, _generalC]) {
+    for (final controller in [_centerX, _centerY, _radius, _axisX, _axisY, _p, _generalA, _generalB, _generalH, _generalG, _generalF, _generalC, _functionExpression]) {
       controller.dispose();
     }
     super.dispose();
@@ -115,6 +121,20 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
     }
   }
 
+  void _generateFunction() {
+    try {
+      final segments = _functionGraphEngine.sample(_functionExpression.text.trim());
+      setState(() {
+        _functionSegments = segments;
+        _error = null;
+      });
+    } on MathException catch (error) {
+      setState(() => _error = error.message);
+    } on FormatException {
+      setState(() => _error = 'Enter a valid expression in x, such as sin(x) or ln(x).');
+    }
+  }
+
   double _read(TextEditingController controller) => double.parse(controller.text.trim());
 
   double _generalValue(TextEditingController controller) => double.parse(controller.text.trim());
@@ -127,13 +147,24 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title), bottom: TabBar(controller: _tabs, tabs: const [Tab(text: 'Pick a Shape'), Tab(text: 'Enter Equation')])),
+      appBar: AppBar(
+        title: Text(widget.title),
+        bottom: TabBar(
+          controller: _tabs,
+          tabs: [
+            const Tab(text: 'Pick a Shape'),
+            const Tab(text: 'Enter Equation'),
+            if (widget.includeFunctionGraphs) const Tab(text: 'Function Graphs'),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: TabBarView(
           controller: _tabs,
           children: [
             _buildScrollView(context, _manualForm(context)),
             _buildScrollView(context, _equationForm(context)),
+            if (widget.includeFunctionGraphs) _buildFunctionScrollView(context),
           ],
         ),
       ),
@@ -226,6 +257,51 @@ class _ConicWorkspaceState extends State<ConicWorkspace> with SingleTickerProvid
     );
   }
 
+  Widget _buildFunctionScrollView(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('Plot supported expressions of x with radians for trigonometric functions. Pan or pinch to move through the graph, use +/- for one-handed zoom, or open full screen to inspect points.', style: Theme.of(context).textTheme.bodyLarge),
+        const SizedBox(height: 20),
+        Text('Function expression', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _functionExpression,
+          decoration: const InputDecoration(labelText: 'y = f(x)', hintText: 'sin(x), exp(x), ln(x)', border: OutlineInputBorder()),
+          autocorrect: false,
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final example in const [
+                'sin(x)', 'cos(x)', 'tan(x)',
+                'asin(x)', 'acos(x)', 'atan(x)',
+                'exp(x)', 'ln(x)', 'log(x)',
+                'x^2', 'x^3', 'sqrt(x)',
+                '1/x', 'abs(x)',
+              ])
+              ActionChip(
+                label: Text(example),
+                onPressed: () => setState(() => _functionExpression.text = example),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        FilledButton.icon(onPressed: _generateFunction, icon: const Icon(Icons.show_chart), label: const Text('Generate Function Graph')),
+        if (_error != null) ...[
+          const SizedBox(height: 16),
+          _StatusPanel(message: _error!, isError: true),
+        ],
+        if (_functionSegments != null) ...[
+          const SizedBox(height: 20),
+          SizedBox(height: 420, child: FunctionGraphView(expression: _functionExpression.text, segments: _functionSegments!)),
+        ],
+      ],
+    );
+  }
+
   Widget _numberField(String label, TextEditingController controller) => TextFormField(
     controller: controller,
     keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
@@ -306,21 +382,7 @@ class _ConicOutput extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 360,
-          child: DecoratedBox(
-            decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(8)),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: InteractiveViewer(
-                boundaryMargin: const EdgeInsets.all(80),
-                minScale: 0.6,
-                maxScale: 4,
-                child: SizedBox(width: 600, height: 400, child: CustomPaint(painter: ConicPainter(result))),
-              ),
-            ),
-          ),
-        ),
+        SizedBox(height: 400, child: ConicGraphView(result: result)),
         const SizedBox(height: 16),
         Text('${result.shapeName} values', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),

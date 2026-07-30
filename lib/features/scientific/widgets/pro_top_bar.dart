@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/expression_engine/evaluator.dart';
 
-/// The status/navigation bar for Pro mode: current calculation mode badge,
-/// angle unit (tap to cycle), SHIFT/ALPHA active indicators, and quick
-/// access to MODE, Tools, and History.
+/// Compact status/navigation bar for Pro mode — replaces the cluttered
+/// AppBar with a clean row of chips and icon actions.
 class ProTopBar extends StatelessWidget implements PreferredSizeWidget {
   const ProTopBar({
     required this.modeLabel,
@@ -37,21 +36,54 @@ class ProTopBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return AppBar(
+      titleSpacing: 8,
       title: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Pro'),
-          const SizedBox(width: 8),
-          Chip(label: Text(modeLabel), visualDensity: VisualDensity.compact, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+          Text('Pro', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: colors.primary)),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: colors.primaryContainer,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              modeLabel,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: colors.onPrimaryContainer),
+            ),
+          ),
+          const SizedBox(width: 6),
+          if (shiftActive)
+            _StatusDot(label: 'S', color: colors.tertiary),
+          if (alphaActive)
+            _StatusDot(label: 'A', color: colors.error),
         ],
       ),
       actions: [
-        if (shiftActive) Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: _Indicator(text: 'S', color: colors.tertiary)),
-        if (alphaActive) Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: _Indicator(text: 'A', color: colors.error)),
-        TextButton(onPressed: onAngleUnitTap, child: Text(_angleUnitLabel)),
-        IconButton(icon: const Icon(Icons.build_outlined), tooltip: 'Tools', onPressed: onToolsTap),
-        IconButton(icon: const Icon(Icons.tune), tooltip: 'Mode', onPressed: onModeTap),
-        IconButton(icon: const Icon(Icons.history), tooltip: 'History', onPressed: onHistoryTap),
+        _CompactAction(
+          label: _angleUnitLabel,
+          onTap: onAngleUnitTap,
+          color: colors.secondary,
+        ),
+        IconButton(
+          icon: const Icon(Icons.build_outlined, size: 20),
+          tooltip: 'Tools',
+          onPressed: onToolsTap,
+          visualDensity: VisualDensity.compact,
+        ),
+        IconButton(
+          icon: const Icon(Icons.tune, size: 20),
+          tooltip: 'Mode',
+          onPressed: onModeTap,
+          visualDensity: VisualDensity.compact,
+        ),
+        IconButton(
+          icon: const Icon(Icons.history, size: 20),
+          tooltip: 'History',
+          onPressed: onHistoryTap,
+          visualDensity: VisualDensity.compact,
+        ),
+        const SizedBox(width: 4),
       ],
     );
   }
@@ -60,14 +92,51 @@ class ProTopBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
 
-class _Indicator extends StatelessWidget {
-  const _Indicator({required this.text, required this.color});
+class _StatusDot extends StatelessWidget {
+  const _StatusDot({required this.label, required this.color});
 
-  final String text;
+  final String label;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return CircleAvatar(radius: 11, backgroundColor: color, child: Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)));
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: CircleAvatar(
+        radius: 10,
+        backgroundColor: color,
+        child: Text(label, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+}
+
+class _CompactAction extends StatelessWidget {
+  const _CompactAction({required this.label, required this.onTap, required this.color});
+
+  final String label;
+  final VoidCallback onTap;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: color.withValues(alpha: 0.5)),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+          ),
+        ),
+      ),
+    );
   }
 }

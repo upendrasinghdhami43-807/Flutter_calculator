@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../scientific_controller.dart';
 
-/// The long-tail SHIFT-function "Tools" bottom sheet: GCD/LCM/floor/ceil and
-/// variable store/recall (A/B/C). This is a deliberate, flagged
-/// consolidation of the many individual shift-function grid slots the fx-991
-/// hardware layout dedicates a physical key to — on a phone screen those are
-/// folded into one sheet instead of a literal 8×6 button grid.
+/// Tools bottom sheet — comprehensive function access for Pro mode.
+/// Groups: Math functions, Conversion, Variable store/recall.
 class ToolsSheet extends StatelessWidget {
   const ToolsSheet({required this.controller, super.key});
 
@@ -23,34 +20,104 @@ class ToolsSheet extends StatelessWidget {
       Navigator.of(context).pop();
     }
 
+    final colors = Theme.of(context).colorScheme;
+
     return SafeArea(
       child: ListView(
         shrinkWrap: true,
         children: [
-          const Padding(padding: EdgeInsets.all(16), child: Text('Tools', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-          ListTile(leading: const Icon(Icons.calculate), title: const Text('GCD(a, b)'), onTap: () => insertAndClose('gcd(')),
-          ListTile(leading: const Icon(Icons.calculate_outlined), title: const Text('LCM(a, b)'), onTap: () => insertAndClose('lcm(')),
-          ListTile(leading: const Icon(Icons.south), title: const Text('Floor'), onTap: () => insertAndClose('floor(')),
-          ListTile(leading: const Icon(Icons.north), title: const Text('Ceiling'), onTap: () => insertAndClose('ceil(')),
-          ListTile(leading: const Icon(Icons.filter_3), title: const Text('nPr(n, r)'), onTap: () => insertAndClose('npr(')),
-          ListTile(leading: const Icon(Icons.filter_2), title: const Text('nCr(n, r)'), onTap: () => insertAndClose('ncr(')),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('Tools', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: colors.primary)),
+          ),
+          // Math functions
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text('Math Functions', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: colors.onSurfaceVariant)),
+          ),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.calculate, size: 20),
+            title: const Text('GCD(a, b)'),
+            subtitle: const Text('Greatest common divisor'),
+            onTap: () => insertAndClose('gcd('),
+          ),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.calculate_outlined, size: 20),
+            title: const Text('LCM(a, b)'),
+            subtitle: const Text('Least common multiple'),
+            onTap: () => insertAndClose('lcm('),
+          ),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.south, size: 20),
+            title: const Text('floor(x)'),
+            subtitle: const Text('Round down to integer'),
+            onTap: () => insertAndClose('floor('),
+          ),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.north, size: 20),
+            title: const Text('ceil(x)'),
+            subtitle: const Text('Round up to integer'),
+            onTap: () => insertAndClose('ceil('),
+          ),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.straighten, size: 20),
+            title: const Text('|x| — Absolute value'),
+            onTap: () => insertAndClose('abs('),
+          ),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.filter_3, size: 20),
+            title: const Text('nPr(n, r)'),
+            subtitle: const Text('Permutations'),
+            onTap: () => insertAndClose('npr('),
+          ),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.filter_2, size: 20),
+            title: const Text('nCr(n, r)'),
+            subtitle: const Text('Combinations'),
+            onTap: () => insertAndClose('ncr('),
+          ),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.swap_vert, size: 20),
+            title: const Text('logb(base, x)'),
+            subtitle: const Text('Logarithm with custom base'),
+            onTap: () => insertAndClose('logb('),
+          ),
           const Divider(),
-          for (final variable in const ['a', 'b', 'c'])
+          // Variable store/recall
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text('Variable Memory', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: colors.onSurfaceVariant)),
+          ),
+          for (final variable in const ['a', 'b', 'c', 'd', 'e', 'f'])
             ListTile(
-              leading: const Icon(Icons.save_outlined),
-              title: Text('Store answer to ${variable.toUpperCase()}'),
+              dense: true,
+              leading: CircleAvatar(
+                radius: 14,
+                backgroundColor: colors.secondaryContainer,
+                child: Text(variable.toUpperCase(), style: TextStyle(fontSize: 12, color: colors.onSecondaryContainer)),
+              ),
+              title: Text('Store → ${variable.toUpperCase()}'),
               trailing: TextButton(
                 onPressed: () {
                   controller.recallVariable(variable);
                   Navigator.of(context).pop();
                 },
-                child: Text('Recall $variable'.toUpperCase()),
+                child: Text('Recall', style: TextStyle(color: colors.primary)),
               ),
               onTap: () {
                 controller.storeVariable(variable);
                 Navigator.of(context).pop();
               },
             ),
+          const SizedBox(height: 8),
         ],
       ),
     );
